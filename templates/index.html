@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gradient-to-br from-blue-50 to-indigo-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LYZR Clinic QnA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .chat-container { max-width: 800px; }
+    .msg { max-width: 75%; padding: 1rem 1.25rem; border-radius: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.08); position: relative; }
+    .user { background: linear-gradient(to right, #3b82f6, #2563eb); color: white; align-self: flex-end; border-bottom-right-radius: 0.5rem; }
+    .bot { background: white; color: #1f2937; border: 1px solid #e5e7eb; align-self: flex-start; border-bottom-left-radius: 0.5rem; }
+    .icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .bot-icon { background: #6366f1; color: white; }
+    .user-icon { background: #1e40af; color: white; }
+    .loading { opacity: 0.7; font-style: italic; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans">
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-indigo-700">LYZR Clinic QnA</h1>
+      <div class="flex items-center gap-3">
+        <button onclick="clearChat()" class="text-red-600 text-sm hover:underline">
+          <i class="fas fa-trash-alt mr-1"></i> Clear Chat
+        </button>
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span>Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="chat" class="flex-1 overflow-y-auto p-6 space-y-4 chat-container w-full mx-auto flex flex-col">
+    <div class="flex items-start gap-3">
+      <div class="icon bot-icon">
+        <i class="fas fa-robot text-lg"></i>
+      </div>
+      <div class="msg bot">
+        Hello! I'm your clinic assistant. Ask me about hours, insurance, location, or policies.
+      </div>
+    </div>
+  </div>
+
+  <form id="qna-form" class="border-t border-gray-200 bg-white p-4">
+    <div class="chat-container mx-auto flex gap-3">
+      <input
+        type="text"
+        id="question-input"
+        placeholder="e.g., Where is the clinic located?"
+        required
+        class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        id="send-btn"
+        class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-blue-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        <i class="fas fa-paper-plane"></i> Send
+      </button>
+    </div>
+  </form>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('qna-form');
+    const input = document.getElementById('question-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+
+      addMessage(question, 'user');
+      input.value = '';
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Thinking...';
+
+      try {
+        const res = await fetch('/qna/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `question=${encodeURIComponent(question)}`,
+          credentials: 'include'  // Important: send cookies
+        });
+
+        const data = await res.json();
+        addMessage(data.answer, 'bot');
+      } catch (err) {
+        addMessage("Sorry, something went wrong. Please try again.", 'bot');
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+        input.focus();
+      }
+    });
+
+    function addMessage(text, sender) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `flex items-start gap-3 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+
+      const iconDiv = document.createElement('div');
+      iconDiv.className = `icon ${sender === 'user' ? 'user-icon' : 'bot-icon'}`;
+      iconDiv.innerHTML = sender === 'user' 
+        ? '<i class="fas fa-user"></i>' 
+        : '<i class="fas fa-robot"></i>';
+      messageDiv.appendChild(iconDiv);
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `msg ${sender}`;
+      msgDiv.textContent = text;
+      messageDiv.appendChild(msgDiv);
+
+      chat.appendChild(messageDiv);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function clearChat() {
+      if (!confirm("Clear chat history?")) return;
+      await fetch('/qna/clear', { 
+        method: 'POST',
+        credentials: 'include'
+      });
+      location.reload();
+    }
+
+    window.onload = () => input.focus();
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+services:
+  clinic-rag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lyzr-clinic-qna
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - vector_db:/app/vector_db
+    env_file:
+      - .env
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Checking vector DB status...';
+        if [ ! -d '/app/vector_db' ] || [ -z \"\$$(find /app/vector_db -mindepth 1 -print -quit)\" ]; then
+          echo 'No vector DB found or empty directory → running ingestion...';
+          python scripts/ingest.py || { echo 'Ingestion failed'; exit 1; };
+        else
+          echo 'Vector DB exists → skipping ingestion';
+        fi;
+        echo 'Starting application...';
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+volumes:
+  vector_db:
+    name: clinic_vector_db
