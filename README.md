@@ -34,8 +34,8 @@ Deployment: Docker + docker-compose
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/yourname/lyzr-clinic-qna.git
-cd lyzr-clinic-qna
+git clone https://github.com/pushpinderdeswal/Lyzr_QnA_RAG
+cd Lyzr_QnA_RAG
 
 # 2. Copy .env.example → .env and add your OpenAI key
 cp .env.example .env
@@ -56,8 +56,8 @@ Open: [http://localhost:8000](http://localhost:8000)
 
 ```bash
 # 1. Clone and enter
-git clone https://github.com/yourname/lyzr-clinic-qna.git
-cd lyzr-clinic-qna
+git clone https://github.com/pushpinderdeswal/Lyzr_QnA_RAG
+cd Lyzr_QnA_RAG
 
 # 2. Create virtual env
 python -m venv venv
